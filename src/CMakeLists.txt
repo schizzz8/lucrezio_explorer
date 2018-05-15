@@ -1,0 +1,2 @@
+add_subdirectory(frontier_detector)
+add_subdirectory(apps)
