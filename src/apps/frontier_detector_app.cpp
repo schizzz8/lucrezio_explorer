@@ -23,6 +23,7 @@ int main(int argc, char **argv){
 
   float resolution = 0.05f;
   Eigen::Vector2f origin;
+  origin << -10.081390, -9.952499;
 
   FrontierDetector detector;
   detector.setRobotPose(robot_pose);

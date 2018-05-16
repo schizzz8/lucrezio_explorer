@@ -29,15 +29,17 @@ MoveBaseGoal LucrezioExplorer::computeNextPose(){
   _detector.computeFrontierPoints();
   _detector.computeFrontierRegions();
   _detector.computeFrontierCentroids();
+  _detector.rankFrontierCentroids();
+  ScoredCellQueue &scored_centroids = _detector.frontierScoredCentroids();
 
   //return goal message
   move_base_msgs::MoveBaseGoal goal_msg;
   goal_msg.target_pose.header.frame_id = "/map";
   goal_msg.target_pose.header.stamp = ros::Time::now();
 
-  Eigen::Vector2i centroid;
-  goal_msg.target_pose.pose.position.x = centroid.y()*resolution + origin.x();
-  goal_msg.target_pose.pose.position.y = centroid.x()*resolution + origin.y();
+  ScoredCell centroid = scored_centroids.top();
+  goal_msg.target_pose.pose.position.x = centroid.cell.y()*resolution + origin.x();
+  goal_msg.target_pose.pose.position.y = centroid.cell.x()*resolution + origin.y();
   goal_msg.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
 
   return goal_msg;
