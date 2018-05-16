@@ -7,7 +7,7 @@ using namespace srrg_core;
 
 void drawFrontierPoints(RGBImage &image, const Vector2iVector &points);
 void drawFrontierRegions(RGBImage &image, const RegionVector &regions);
-void drawFrontierCentroids(RGBImage &image, const Vector2iVector &centroids);
+void drawFrontierScoredCentroids(RGBImage &image, ScoredCellQueue & scored_centroids);
 
 int main(int argc, char **argv){
 
@@ -19,10 +19,15 @@ int main(int argc, char **argv){
   RGBImage occupancy_rgb;
   cv::cvtColor(occupancy_grid,occupancy_rgb,CV_GRAY2BGR);
 
+  Eigen::Isometry3f robot_pose = Eigen::Isometry3f::Identity();
+
   float resolution = 0.05f;
+  Eigen::Vector2f origin;
 
   FrontierDetector detector;
+  detector.setRobotPose(robot_pose);
   detector.setResolution(resolution);
+  detector.setOrigin(origin);
   detector.setMap(occupancy_grid);
 
   detector.init();
@@ -47,14 +52,15 @@ int main(int argc, char **argv){
   drawFrontierRegions(regions_image,regions);
   cv::imshow("Frontier regions",regions_image);
 
-  //compute frontier regions
+  //compute and rank frontier centroids
   detector.computeFrontierCentroids();
-  const Vector2iVector &centroids = detector.frontierCentroids();
+  detector.rankFrontierCentroids();
+  ScoredCellQueue &scored_centroids = detector.frontierScoredCentroids();
 
-  RGBImage centroids_image;
-  occupancy_rgb.copyTo(centroids_image);
-  drawFrontierCentroids(centroids_image,centroids);
-  cv::imshow("Frontier centroids",centroids_image);
+  RGBImage scored_centroids_image;
+  occupancy_rgb.copyTo(scored_centroids_image);
+  drawFrontierScoredCentroids(scored_centroids_image,scored_centroids);
+  cv::imshow("Frontier centroids",scored_centroids_image);
 
   cv::waitKey();
 
@@ -79,9 +85,18 @@ void drawFrontierRegions(RGBImage &image, const RegionVector &regions){
   }
 }
 
-void drawFrontierCentroids(RGBImage &image, const Vector2iVector &centroids){
-  for(const Eigen::Vector2i &centroid : centroids){
-    cv::Point2i cell(centroid.y(),centroid.x());
+void drawFrontierScoredCentroids(RGBImage &image, ScoredCellQueue &scored_centroids){
+  int count = 0;
+  while (!scored_centroids.empty()) {
+    ScoredCell centroid = scored_centroids.top();
+    cv::Point2i cell(centroid.cell.y(),centroid.cell.x());
     cv::circle(image,cell,4,cv::Scalar(255,0,0),2);
+    float score = centroid.score;
+    std::ostringstream ss;
+    ss << count;
+    cv::putText(image, ss.str(), cell, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
+    std::cerr << "Centroid " << count << ": " << score << std::endl;
+    count++;
+    scored_centroids.pop();
   }
 }

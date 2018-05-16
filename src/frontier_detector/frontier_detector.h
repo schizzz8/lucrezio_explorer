@@ -13,7 +13,7 @@ struct ScoredCell {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     bool operator<(const ScoredCell& sc) const {
-      return score > sc.score;
+      return score < sc.score;
     }
 
     float score;
@@ -55,6 +55,7 @@ class FrontierDetector{
     inline const srrg_core::Vector2iVector &frontierPoints() const {return _frontier_points;}
     inline const RegionVector &frontierRegions() const {return _frontier_regions;}
     inline const srrg_core::Vector2iVector &frontierCentroids() const {return _frontier_centroids;}
+    inline ScoredCellQueue &frontierScoredCentroids() {return _frontier_scored_centroids;}
 
   protected:
 

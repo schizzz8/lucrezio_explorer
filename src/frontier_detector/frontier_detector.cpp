@@ -82,8 +82,8 @@ void FrontierDetector::computeFrontierCentroids(){
 
 void FrontierDetector::rankFrontierCentroids(){
 
-  Eigen::Vector2i robot_position(0,0);
-  float robot_orientation = 0;
+  Eigen::Vector2i robot_position = ((_robot_pose.translation().head(2)-_origin)/_resolution).cast<int>();
+  float robot_orientation = _robot_pose.linear().eulerAngles(0,1,2).z();
 
   for(size_t i=0; i<_frontier_centroids.size(); ++i){
 
@@ -192,4 +192,3 @@ void FrontierDetector::recurRegion(const Vector2iList::iterator& frontier_it, Ve
     }
   }
 }
-
