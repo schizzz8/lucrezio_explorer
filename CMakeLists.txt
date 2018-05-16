@@ -27,6 +27,13 @@ endif ()
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   srrg_core
+  roscpp
+  std_msgs
+  nav_msgs
+  geometry_msgs
+  tf
+  actionlib_msgs
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions
@@ -128,8 +135,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS src
-  LIBRARIES frontier_detector_library
-  CATKIN_DEPENDS srrg_core
+  LIBRARIES frontier_detector_library lucrezio_explorer_library
+  CATKIN_DEPENDS srrg_core roscpp std_msgs nav_msgs geometry_msgs tf actionlib_msgs actionlib
 #  DEPENDS system_lib
 )
 
