@@ -4,13 +4,11 @@ using namespace srrg_core;
 
 FrontierDetector::FrontierDetector(){
   _resolution = 0.0f;
-  _size.setZero();
   _origin.setZero();
 }
 
 void FrontierDetector::init(){
   assert(_resolution != 0 && "[FrontierDetector][init]: Zero grid resolution!");
-  assert(_size != Eigen::Vector2i::Zero() && "[FrontierDetector][init]: Zero grid size!");
 
   _frontier_points.clear();
   _frontier_regions.clear();
@@ -23,16 +21,19 @@ void FrontierDetector::computeFrontierPoints(){
   Vector2iVector neighbors;
   Vector2iVector neighbors_of_neighbor;
 
-  for(int r=0; r<_size.x(); ++r){
+  for(int r=0; r<_rows; ++r){
     const unsigned char *occupancy_ptr = _occupancy_grid.ptr<unsigned char>(r);
-    for(int c=0; c<_size.y(); ++c, ++occupancy_ptr){
+    for(int c=0; c<_cols; ++c, ++occupancy_ptr){
       const unsigned char &occupancy = *occupancy_ptr;
 
       if(occupancy != Occupancy::FREE)
         continue;
 
-      cell.x() = r;
-      cell.y() = c;
+//      cell.x() = r;
+//      cell.y() = c;
+
+      cell.x() = c;
+      cell.y() = r;
 
       getColoredNeighbors(neighbors,cell,Occupancy::UNKNOWN);
 
@@ -95,7 +96,8 @@ void FrontierDetector::rankFrontierCentroids(){
       distance_cost = 0.1f;
 
     //ahead cost
-    float centroid_angle = std::atan2(diff.x(),diff.y());
+//    float centroid_angle = std::atan2(diff.x(),diff.y());
+    float centroid_angle = std::atan2(diff.y(),diff.x());
     const float ahead_cost = std::cos(angleDifference(robot_orientation,centroid_angle));
 
     //obstacle distance cost
@@ -107,15 +109,18 @@ void FrontierDetector::rankFrontierCentroids(){
         if (r == 0 && c == 0)
           continue;
 
-        int rr = _frontier_centroids[i].x()+r;
-        int cc = _frontier_centroids[i].y()+c;
+//        int rr = _frontier_centroids[i].x()+r;
+//        int cc = _frontier_centroids[i].y()+c;
+        int rr = _frontier_centroids[i].y()+r;
+        int cc = _frontier_centroids[i].x()+c;
 
-        if ( rr < 0 || rr >= _size.x() || cc < 0 || cc >= _size.y())
+        if ( rr < 0 || rr >= _rows || cc < 0 || cc >= _cols)
           continue;
 
 
         if (_occupancy_grid.at<unsigned char>(rr,cc) == Occupancy::OCCUPIED) {
-          float distance = (_frontier_centroids[i] - Eigen::Vector2i(rr,cc)).norm();
+//          float distance = (_frontier_centroids[i] - Eigen::Vector2i(rr,cc)).norm();
+          float distance = (_frontier_centroids[i] - Eigen::Vector2i(cc,rr)).norm();
 
           if (distance < min_dist)
             min_dist = distance;
@@ -151,16 +156,20 @@ void FrontierDetector::getColoredNeighbors(Vector2iVector &neighbors,
       if (r == 0 && c == 0)
         continue;
 
-      int rr = cell.x()+r;
-      int cc = cell.y()+c;
+//      int rr = cell.x()+r;
+//      int cc = cell.y()+c;
 
-      if ( rr < 0 || rr >= _size.x() ||
-           cc < 0 || cc >= _size.y())
+      int rr = cell.y()+r;
+      int cc = cell.x()+c;
+
+      if ( rr < 0 || rr >= _rows ||
+           cc < 0 || cc >= _cols)
         continue;
 
 
       if (_occupancy_grid.at<unsigned char>(rr,cc) == value)
-        neighbors.push_back(Eigen::Vector2i(rr, cc));
+//        neighbors.push_back(Eigen::Vector2i(rr, cc));
+        neighbors.push_back(Eigen::Vector2i(cc,rr));
 
     }
   }
@@ -177,18 +186,22 @@ void FrontierDetector::recurRegion(const Vector2iList::iterator& frontier_it, Ve
       if (r == 0 && c == 0)
         continue;
 
-      int rr = frontier.x()+r;
-      int cc = frontier.y()+c;
+//      int rr = frontier.x()+r;
+//      int cc = frontier.y()+c;
 
-      if (rr < 0 || rr >= _size.x() || cc < 0 || cc >= _size.y()) {
+      int rr = frontier.y()+r;
+      int cc = frontier.x()+c;
+
+      if (rr < 0 || rr >= _rows || cc < 0 || cc >= _cols)
         continue;
-      }
 
-      Eigen::Vector2i n(rr, cc);
+
+//      Eigen::Vector2i n(rr, cc);
+      Eigen::Vector2i n(cc,rr);
       Vector2iList::iterator it = std::find(frontiers.begin(), frontiers.end(), n);
-      if (it != frontiers.end()) {
+      if (it != frontiers.end())
         recurRegion(it, region, frontiers);
-      }
+
     }
   }
 }

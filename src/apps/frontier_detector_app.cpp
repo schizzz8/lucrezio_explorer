@@ -70,7 +70,8 @@ int main(int argc, char **argv){
 
 void drawFrontierPoints(RGBImage &image, const Vector2iVector &points){
   for(const Eigen::Vector2i &point : points){
-    cv::Point2i cell(point.y(),point.x());
+//    cv::Point2i cell(point.y(),point.x());
+    cv::Point2i cell(point.x(),point.y());
     cv::circle(image,cell,1,cv::Scalar(0,0,255));
   }
 }
@@ -80,7 +81,8 @@ void drawFrontierRegions(RGBImage &image, const RegionVector &regions){
   for(const Vector2iVector region : regions){
     cv::Scalar color(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
     for(const Eigen::Vector2i &point : region){
-      cv::Point2i cell(point.y(),point.x());
+//      cv::Point2i cell(point.y(),point.x());
+      cv::Point2i cell(point.x(),point.y());
       cv::circle(image,cell,1,color);
     }
   }
@@ -90,7 +92,8 @@ void drawFrontierScoredCentroids(RGBImage &image, ScoredCellQueue &scored_centro
   int count = 0;
   while (!scored_centroids.empty()) {
     ScoredCell centroid = scored_centroids.top();
-    cv::Point2i cell(centroid.cell.y(),centroid.cell.x());
+//    cv::Point2i cell(centroid.cell.y(),centroid.cell.x());
+    cv::Point2i cell(centroid.cell.x(),centroid.cell.y());
     cv::circle(image,cell,4,cv::Scalar(255,0,0),2);
     float score = centroid.score;
     std::ostringstream ss;

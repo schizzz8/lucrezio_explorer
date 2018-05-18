@@ -38,12 +38,17 @@ class FrontierDetector{
 
     inline Configuration& mutableConfig(){return _config;}
 
+    inline const float &resolution() const {return _resolution;}
+    inline const Eigen::Vector2f &origin() const {return _origin;}
+    inline const srrg_core::UnsignedCharImage &occupancyGrid() const {return _occupancy_grid;}
+    inline const Eigen::Isometry3f &robotPose() const {return _robot_pose;}
+
     inline void setRobotPose(const Eigen::Isometry3f &robot_pose_){_robot_pose = robot_pose_;}
-    inline void setResolution(float resolution_){_resolution = _resolution;}
+    inline void setResolution(float resolution_){_resolution = resolution_;}
     inline void setOrigin(const Eigen::Vector2f &origin_){_origin = origin_;}
     inline void setMap(const srrg_core::UnsignedCharImage &occupancy_grid_){occupancy_grid_.copyTo(_occupancy_grid);
-                                                                            _size << occupancy_grid_.rows,occupancy_grid_.cols;}
-
+                                                                            _rows = occupancy_grid_.rows;
+                                                                            _cols = occupancy_grid_.cols;}
 
     void init();
 
@@ -62,11 +67,12 @@ class FrontierDetector{
     Configuration _config;
 
     float _resolution;
-    Eigen::Vector2i _size;
+    int _rows;
+    int _cols;
     Eigen::Vector2f _origin;
+    srrg_core::UnsignedCharImage _occupancy_grid;
 
     Eigen::Isometry3f _robot_pose;
-    srrg_core::UnsignedCharImage _occupancy_grid;
 
     srrg_core::Vector2iVector _frontier_points;
     RegionVector _frontier_regions;

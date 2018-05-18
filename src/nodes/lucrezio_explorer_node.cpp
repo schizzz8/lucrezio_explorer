@@ -15,7 +15,7 @@ int main(int argc, char **argv){
   MoveBaseClient ac("move_base",true);
 
   //start execution loop
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(1);
   while (ros::ok()){
 
     ROS_INFO("Waiting for move_base action server to start.");
@@ -24,6 +24,9 @@ int main(int argc, char **argv){
     ROS_INFO("Action server started, sending goal.");
     move_base_msgs::MoveBaseGoal goal = explorer.computeNextPose();
     ac.sendGoal(goal);
+
+    //visualize next pose
+    explorer.showNextPose();
 
     //wait for the action server to return
     bool finished_before_timeout = ac.waitForResult(ros::Duration(30.0));

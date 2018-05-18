@@ -10,17 +10,21 @@
 
 
 class LucrezioExplorer{
+
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
     move_base_msgs::MoveBaseGoal computeNextPose();
+    void showNextPose();
 
   protected:
 
     tf::TransformListener _listener;
     FrontierDetector _detector;
 
+    ScoredCell _next_pose;
+
   private:
+
     bool listenRobotPose(Eigen::Isometry3f &robot_pose);
     bool receiveOccupancyGridMsg(const std::string &map_topic,
                                  float duration,
