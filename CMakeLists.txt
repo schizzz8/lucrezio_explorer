@@ -34,6 +34,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   actionlib_msgs
   actionlib
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -136,7 +137,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 catkin_package(
   INCLUDE_DIRS src
   LIBRARIES frontier_detector_library lucrezio_explorer_library
-  CATKIN_DEPENDS srrg_core roscpp std_msgs nav_msgs geometry_msgs tf actionlib_msgs actionlib
+  CATKIN_DEPENDS srrg_core roscpp std_msgs nav_msgs geometry_msgs tf actionlib_msgs actionlib visualization_msgs
 #  DEPENDS system_lib
 )
 

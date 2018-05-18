@@ -8,12 +8,12 @@
 
 #include <frontier_detector/frontier_detector.h>
 
-
 class LucrezioExplorer{
 
   public:
 
-    move_base_msgs::MoveBaseGoal computeNextPose();
+//    move_base_msgs::MoveBaseGoal computeNextPose();
+    Eigen::Vector2f computeNextPose();
     void showNextPose();
 
   protected:

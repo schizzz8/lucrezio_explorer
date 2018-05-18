@@ -2,7 +2,7 @@
 
 using namespace move_base_msgs;
 
-MoveBaseGoal LucrezioExplorer::computeNextPose(){
+Eigen::Vector2f LucrezioExplorer::computeNextPose(){
 
   //listen to robot pose
   Eigen::Isometry3f robot_pose;
@@ -44,24 +44,12 @@ MoveBaseGoal LucrezioExplorer::computeNextPose(){
   _detector.rankFrontierCentroids();
   _next_pose = _detector.frontierScoredCentroids().top();
 
-  //return goal message
-  move_base_msgs::MoveBaseGoal goal_msg;
-  goal_msg.target_pose.header.frame_id = "/map";
-  goal_msg.target_pose.header.stamp = ros::Time::now();
 
   float next_pose_x = _next_pose.cell.x()*resolution + origin.x();
   float next_pose_y = (occupancy_grid.rows - _next_pose.cell.y())*resolution + origin.y();
 
-  goal_msg.target_pose.pose.position.x = next_pose_x;
-  goal_msg.target_pose.pose.position.y = next_pose_y;
-  goal_msg.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
 
-  std::cerr << std::endl;
-  std::cerr << "Next pose" << std::endl;
-  std::cerr << "Position: " << next_pose_x << ", " << next_pose_y << std::endl;
-
-
-  return goal_msg;
+  return Eigen::Vector2f(next_pose_x,next_pose_y);
 }
 
 void LucrezioExplorer::showNextPose(){
