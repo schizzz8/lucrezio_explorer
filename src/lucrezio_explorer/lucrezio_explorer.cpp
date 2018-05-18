@@ -23,6 +23,18 @@ MoveBaseGoal LucrezioExplorer::computeNextPose(){
     _detector.setMap(occupancy_grid);
   }
 
+  std::cerr << std::endl;
+  ROS_DEBUG("Compute next pose!");
+  std::cerr << std::endl;
+  std::cerr << "Grid" << std::endl;
+  std::cerr << "Resolution: " << resolution << std::endl;
+  std::cerr << "Dimesions: " << occupancy_grid.rows << "x" << occupancy_grid.cols << std::endl;
+  std::cerr << "Origin: " << origin.transpose() << std::endl;
+  std::cerr << std::endl;
+  std::cerr << "Robot" << std::endl;
+  std::cerr << "Position: " << robot_pose.translation().head(2).transpose() << std::endl;
+  std::cerr << "Orientation: " << robot_pose.linear().eulerAngles(0,1,2).z() << std::endl;
+
   //compute goal
   _detector.init();
 
@@ -37,9 +49,17 @@ MoveBaseGoal LucrezioExplorer::computeNextPose(){
   goal_msg.target_pose.header.frame_id = "/map";
   goal_msg.target_pose.header.stamp = ros::Time::now();
 
-  goal_msg.target_pose.pose.position.x = _next_pose.cell.y()*resolution + origin.x();
-  goal_msg.target_pose.pose.position.y = _next_pose.cell.x()*resolution + origin.y();
+  float next_pose_x = _next_pose.cell.x()*resolution + origin.x();
+  float next_pose_y = (occupancy_grid.rows - _next_pose.cell.y())*resolution + origin.y();
+
+  goal_msg.target_pose.pose.position.x = next_pose_x;
+  goal_msg.target_pose.pose.position.y = next_pose_y;
   goal_msg.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+
+  std::cerr << std::endl;
+  std::cerr << "Next pose" << std::endl;
+  std::cerr << "Position: " << next_pose_x << ", " << next_pose_y << std::endl;
+
 
   return goal_msg;
 }
@@ -50,20 +70,15 @@ void LucrezioExplorer::showNextPose(){
   srrg_core::RGBImage occupancy_rgb;
   cv::cvtColor(_detector.occupancyGrid(),occupancy_rgb,CV_GRAY2BGR);
 
+  //robot position
   const float &resolution = _detector.resolution();
   const Eigen::Vector2f &grid_origin = _detector.origin();
-
-  //map origin
-  cv::Point2i origin(grid_origin.y(),grid_origin.x());
-  cv::circle(occupancy_rgb,origin,4,cv::Scalar(0,255,0),2);
-
-  //robot position
   Eigen::Vector2i robot_position = ((_detector.robotPose().translation().head(2)-grid_origin)/resolution).cast<int>();
-  cv::Point2i robot(robot_position.y(),robot_position.x());
+  cv::Point2i robot(robot_position.x(),occupancy_rgb.rows - robot_position.y());
   cv::circle(occupancy_rgb,robot,4,cv::Scalar(0,0,255),2);
 
   //next pose
-  cv::Point2i next_pose(_next_pose.cell.y(),_next_pose.cell.x());
+  cv::Point2i next_pose(_next_pose.cell.x(),_next_pose.cell.y());
   cv::circle(occupancy_rgb,next_pose,4,cv::Scalar(255,0,0),2);
   float score = _next_pose.score;
   std::ostringstream ss;
@@ -72,18 +87,6 @@ void LucrezioExplorer::showNextPose(){
 
   cv::imshow("explorer",occupancy_rgb);
   cv::waitKey(10);
-
-  std::cerr << std::endl;
-  ROS_INFO("Show next pose!");
-  std::cerr << std::endl;
-  std::cerr << "Grid" << std::endl;
-  std::cerr << "Resolution: " << resolution << std::endl;
-  std::cerr << "Dimesions: " << occupancy_rgb.rows << "x" << occupancy_rgb.cols << std::endl;
-  std::cerr << "Origin: " << origin << std::endl;
-  std::cerr << std::endl;
-  std::cerr << "Robot" << std::endl;
-  std::cerr << "Position: " << robot << std::endl;
-
 }
 
 bool LucrezioExplorer::listenRobotPose(Eigen::Isometry3f &robot_pose){
@@ -113,15 +116,6 @@ bool LucrezioExplorer::listenRobotPose(Eigen::Isometry3f &robot_pose){
   q.z()= tq.z();
   q.w()= tq.w();
   robot_pose.linear()=q.toRotationMatrix();
-
-  Eigen::Vector2f robot_position = robot_pose.translation().head(2);
-  float robot_orientation = robot_pose.linear().eulerAngles(0,1,2).z();
-
-  std::cerr << std::endl;
-  ROS_INFO("Received robot pose!");
-  std::cerr << "Position: " << robot_position.transpose() << std::endl;
-  std::cerr << "Orientation: " << robot_orientation << std::endl;
-  std::cerr << std::endl;
 
   return true;
 }
@@ -161,13 +155,6 @@ bool LucrezioExplorer::receiveOccupancyGridMsg(const std::string &map_topic,
             occupancy_grid.data[i*width + j] = Occupancy::OCCUPIED;
             break;
         }
-
-    std::cerr << std::endl;
-    ROS_INFO("Received occupancy grid!");
-    std::cerr << "Dimension: " << height << "x" << width << std::endl;
-    std::cerr << "Resolution: " << resolution << std::endl;
-    std::cerr << "Origin: " << origin.transpose() << std::endl;
-    std::cerr << std::endl;
 
     return true;
   }
