@@ -2,12 +2,12 @@
 
 using namespace move_base_msgs;
 
-Eigen::Vector2f LucrezioExplorer::computeNextPose(){
+void LucrezioExplorer::computeNextPoses(){
 
   //listen to robot pose
   Eigen::Isometry3f robot_pose;
   if(listenRobotPose(robot_pose))
-    _detector.setRobotPose(robot_pose);
+    setRobotPose(robot_pose);
 
   //receive current map
   float resolution;
@@ -18,9 +18,9 @@ Eigen::Vector2f LucrezioExplorer::computeNextPose(){
                              resolution,
                              origin,
                              occupancy_grid)){
-    _detector.setResolution(resolution);
-    _detector.setOrigin(origin);
-    _detector.setMap(occupancy_grid);
+    setResolution(resolution);
+    setOrigin(origin);
+    setMap(occupancy_grid);
   }
 
   std::cerr << std::endl;
@@ -36,55 +36,25 @@ Eigen::Vector2f LucrezioExplorer::computeNextPose(){
   std::cerr << "Orientation: " << robot_pose.linear().eulerAngles(0,1,2).z() << std::endl;
 
   //compute goal
-  _detector.init();
+  init();
 
-  _detector.computeFrontierPoints();
-  _detector.computeFrontierRegions();
-  _detector.computeFrontierCentroids();
-  _detector.rankFrontierCentroids();
-  _next_pose = _detector.frontierScoredCentroids().top();
-
-
-  float next_pose_x = _next_pose.cell.x()*resolution + origin.x();
-  float next_pose_y = (occupancy_grid.rows - _next_pose.cell.y())*resolution + origin.y();
-
-
-  return Eigen::Vector2f(next_pose_x,next_pose_y);
+  computeFrontierPoints();
+  computeFrontierRegions();
+  computeFrontierCentroids();
+  rankFrontierCentroids();
 }
 
-void LucrezioExplorer::showNextPose(){
-
-  //map
-  srrg_core::RGBImage occupancy_rgb;
-  cv::cvtColor(_detector.occupancyGrid(),occupancy_rgb,CV_GRAY2BGR);
-
-  //robot position
-  const float &resolution = _detector.resolution();
-  const Eigen::Vector2f &grid_origin = _detector.origin();
-  Eigen::Vector2i robot_position = ((_detector.robotPose().translation().head(2)-grid_origin)/resolution).cast<int>();
-  cv::Point2i robot(robot_position.x(),occupancy_rgb.rows - robot_position.y());
-  cv::circle(occupancy_rgb,robot,4,cv::Scalar(0,0,255),2);
-
-  //next pose
-  cv::Point2i next_pose(_next_pose.cell.x(),_next_pose.cell.y());
-  cv::circle(occupancy_rgb,next_pose,4,cv::Scalar(255,0,0),2);
-  float score = _next_pose.score;
-  std::ostringstream ss;
-  ss << score;
-  cv::putText(occupancy_rgb, ss.str(), next_pose, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,0,255));
-
-  cv::imshow("explorer",occupancy_rgb);
-  cv::waitKey(10);
-}
 
 bool LucrezioExplorer::listenRobotPose(Eigen::Isometry3f &robot_pose){
+
+  tf::TransformListener listener;
   tf::StampedTransform robot_tf;
   try {
-    _listener.waitForTransform("map",
+    listener.waitForTransform("map",
                                "base_link",
                                ros::Time(0),
                                ros::Duration(3));
-    _listener.lookupTransform("map",
+    listener.lookupTransform("map",
                               "base_link",
                               ros::Time(0),
                               robot_tf);

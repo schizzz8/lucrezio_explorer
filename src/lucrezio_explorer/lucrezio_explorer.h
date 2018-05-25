@@ -8,20 +8,11 @@
 
 #include <frontier_detector/frontier_detector.h>
 
-class LucrezioExplorer{
+class LucrezioExplorer : public FrontierDetector {
 
   public:
 
-//    move_base_msgs::MoveBaseGoal computeNextPose();
-    Eigen::Vector2f computeNextPose();
-    void showNextPose();
-
-  protected:
-
-    tf::TransformListener _listener;
-    FrontierDetector _detector;
-
-    ScoredCell _next_pose;
+    void computeNextPoses();
 
   private:
 
