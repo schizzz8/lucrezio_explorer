@@ -2,6 +2,9 @@
 #include <queue>
 #include <srrg_types/types.hpp>
 
+#include "srrg_path_map/path_map.h"
+#include "srrg_path_map/path_map_utils.h"
+
 enum Occupancy {
   FREE = 254, UNKNOWN = 205, OCCUPIED = 0
 };
@@ -27,11 +30,10 @@ class FrontierDetector{
     struct Configuration{
         int min_neighbors_threshold = 1;
         int size_threshold = 10;
-        int obstacle_radius = 10;
-        float w1=1.0;
-        float w2=1.0;
-        float w3=1.0;
-        float centroid_minimum_score = 1;
+        float radius=1.0;
+        float distance_threshold = 20;
+        float angle_threshold = 0.6;
+        float centroid_minimum_score = 0;
     };
 
     FrontierDetector();
@@ -47,8 +49,7 @@ class FrontierDetector{
     inline void setResolution(float resolution_){_resolution = resolution_;}
     inline void setOrigin(const Eigen::Vector2f &origin_){_origin = origin_;}
     inline void setMap(const srrg_core::UnsignedCharImage &occupancy_grid_){occupancy_grid_.copyTo(_occupancy_grid);
-                                                                            _rows = occupancy_grid_.rows;
-                                                                            _cols = occupancy_grid_.cols;}
+                                                                            _rows = occupancy_grid_.rows;_cols = occupancy_grid_.cols;}
 
     void init();
 

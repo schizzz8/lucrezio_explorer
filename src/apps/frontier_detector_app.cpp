@@ -1,9 +1,14 @@
 #include <iostream>
-
+#include <yaml-cpp/yaml.h>
 #include <frontier_detector/frontier_detector.h>
 
 using namespace std;
 using namespace srrg_core;
+
+void readMapFromYaml(char *filename);
+std::string image_filename;
+float resolution;
+Eigen::Vector2f origin;
 
 void drawFrontierPoints(RGBImage &image, const Vector2iVector &points);
 void drawFrontierRegions(RGBImage &image, const RegionVector &regions);
@@ -11,22 +16,17 @@ void drawFrontierScoredCentroids(RGBImage &image, ScoredCellQueue & scored_centr
 
 int main(int argc, char **argv){
 
+  readMapFromYaml(argv[1]);
+
   cv::Mat occupancy_grid;
-  occupancy_grid = cv::imread(argv[1],CV_LOAD_IMAGE_UNCHANGED);
+  occupancy_grid = cv::imread(image_filename,CV_LOAD_IMAGE_UNCHANGED);
 
   cv::imshow("input",occupancy_grid);
 
   RGBImage occupancy_rgb;
   cv::cvtColor(occupancy_grid,occupancy_rgb,CV_GRAY2BGR);
 
-  Eigen::Isometry3f robot_pose = Eigen::Isometry3f::Identity();
-
-  float resolution = 0.05f;
-  Eigen::Vector2f origin;
-  origin << -10.081390, -9.952499;
-
   FrontierDetector detector;
-  detector.setRobotPose(robot_pose);
   detector.setResolution(resolution);
   detector.setOrigin(origin);
   detector.setMap(occupancy_grid);
@@ -66,6 +66,20 @@ int main(int argc, char **argv){
   cv::waitKey();
 
   return 0;
+}
+
+void readMapFromYaml(char *filename){
+  if(!filename)
+    return;
+
+  YAML::Node map = YAML::LoadFile(filename);
+
+  image_filename = map["image"].as<std::string>();
+  resolution = map["resolution"].as<float>();
+  std::vector<float> std_origin = map["origin"].as<std::vector<float> >();
+  origin.x() = std_origin[0];
+  origin.y() = std_origin[1];
+
 }
 
 void drawFrontierPoints(RGBImage &image, const Vector2iVector &points){

@@ -5,6 +5,8 @@ using namespace srrg_core;
 FrontierDetector::FrontierDetector(){
   _resolution = 0.0f;
   _origin.setZero();
+
+  _robot_pose = Eigen::Isometry3f::Identity();
 }
 
 void FrontierDetector::init(){
@@ -28,9 +30,6 @@ void FrontierDetector::computeFrontierPoints(){
 
       if(occupancy != Occupancy::FREE)
         continue;
-
-//      cell.x() = r;
-//      cell.y() = c;
 
       cell.x() = c;
       cell.y() = r;
@@ -83,60 +82,32 @@ void FrontierDetector::computeFrontierCentroids(){
 
 void FrontierDetector::rankFrontierCentroids(){
 
+  //compute distance map
+  IntImage indices_image;
+  FloatImage distance_image;
+  grayMap2indices(indices_image,_occupancy_grid,60,240);
+  indices2distances(distance_image,indices_image,_resolution,_config.radius);
+
   Eigen::Vector2i robot_position = ((_robot_pose.translation().head(2)-_origin)/_resolution).cast<int>();
   float robot_orientation = _robot_pose.linear().eulerAngles(0,1,2).z();
 
-  for(size_t i=0; i<_frontier_centroids.size(); ++i){
+  for(const Eigen::Vector2i &frontier_centroid : _frontier_centroids){
 
-    const Eigen::Vector2i diff = _frontier_centroids[i] - robot_position;
+    const Eigen::Vector2i diff = frontier_centroid - robot_position;
 
-    //distance cost
-    float distance_cost = diff.norm();
-    if (distance_cost < 10)
-      distance_cost = 0.1f;
+    float distance = diff.norm();
+    if(distance < _config.distance_threshold)
+      continue;
 
-    //ahead cost
-//    float centroid_angle = std::atan2(diff.x(),diff.y());
-    float centroid_angle = std::atan2(diff.y(),diff.x());
-    const float ahead_cost = std::cos(angleDifference(robot_orientation,centroid_angle));
-
-    //obstacle distance cost
-    float obstacle_distance_cost = 1.0;
-    float min_dist = _config.obstacle_radius;
-    for (int r = -_config.obstacle_radius; r <= _config.obstacle_radius; ++r) {
-      for (int c = -_config.obstacle_radius; c <= _config.obstacle_radius; ++c) {
-
-        if (r == 0 && c == 0)
-          continue;
-
-//        int rr = _frontier_centroids[i].x()+r;
-//        int cc = _frontier_centroids[i].y()+c;
-        int rr = _frontier_centroids[i].y()+r;
-        int cc = _frontier_centroids[i].x()+c;
-
-        if ( rr < 0 || rr >= _rows || cc < 0 || cc >= _cols)
-          continue;
-
-
-        if (_occupancy_grid.at<unsigned char>(rr,cc) == Occupancy::OCCUPIED) {
-//          float distance = (_frontier_centroids[i] - Eigen::Vector2i(rr,cc)).norm();
-          float distance = (_frontier_centroids[i] - Eigen::Vector2i(cc,rr)).norm();
-
-          if (distance < min_dist)
-            min_dist = distance;
-
-        }
-      }
-    }
-
-    if (min_dist != _config.obstacle_radius && min_dist > 0) {
-      const float scale_factor = 0.3;
-      obstacle_distance_cost = std::exp(- scale_factor * min_dist);
-    }
+    float angle = std::cos(angleDifference(robot_orientation,std::atan2(diff.y(),diff.x())));
+    std::cerr << angle << std::endl;
+    if(angle < _config.angle_threshold)
+      continue;
 
     ScoredCell scored_centroid;
-    scored_centroid.cell = _frontier_centroids[i];
-    scored_centroid.score = _config.w1*distance_cost + _config.w2*ahead_cost + _config.w3*obstacle_distance_cost;
+    scored_centroid.cell = frontier_centroid;
+    scored_centroid.score = distance_image.at<float>(frontier_centroid.y(),frontier_centroid.x());
+
 
     if(scored_centroid.score >= _config.centroid_minimum_score)
       _frontier_scored_centroids.push(scored_centroid);
@@ -156,9 +127,6 @@ void FrontierDetector::getColoredNeighbors(Vector2iVector &neighbors,
       if (r == 0 && c == 0)
         continue;
 
-//      int rr = cell.x()+r;
-//      int cc = cell.y()+c;
-
       int rr = cell.y()+r;
       int cc = cell.x()+c;
 
@@ -168,7 +136,6 @@ void FrontierDetector::getColoredNeighbors(Vector2iVector &neighbors,
 
 
       if (_occupancy_grid.at<unsigned char>(rr,cc) == value)
-//        neighbors.push_back(Eigen::Vector2i(rr, cc));
         neighbors.push_back(Eigen::Vector2i(cc,rr));
 
     }
@@ -186,17 +153,12 @@ void FrontierDetector::recurRegion(const Vector2iList::iterator& frontier_it, Ve
       if (r == 0 && c == 0)
         continue;
 
-//      int rr = frontier.x()+r;
-//      int cc = frontier.y()+c;
-
       int rr = frontier.y()+r;
       int cc = frontier.x()+c;
 
       if (rr < 0 || rr >= _rows || cc < 0 || cc >= _cols)
         continue;
 
-
-//      Eigen::Vector2i n(rr, cc);
       Eigen::Vector2i n(cc,rr);
       Vector2iList::iterator it = std::find(frontiers.begin(), frontiers.end(), n);
       if (it != frontiers.end())
